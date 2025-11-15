@@ -25,8 +25,13 @@ COPY . .
 # Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader
 
-# Set storage permissions
-RUN chown -R www-data:www-data storage bootstrap/cache
+# Create log file manually
+RUN mkdir -p storage/logs \
+    && touch storage/logs/laravel.log
+
+# Fix permissions so Laravel can write logs, cache, sessions
+RUN chmod -R 777 storage \
+    && chmod -R 777 bootstrap/cache
 
 # Expose port
 EXPOSE 8000
