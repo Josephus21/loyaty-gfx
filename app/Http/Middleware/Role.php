@@ -5,15 +5,9 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\Response;
 
 class Role
 {
-    /**
-     * Handle an incoming request.
-     *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
-     */
     public function handle(Request $request, Closure $next)
     {
         $user = Auth::user();
@@ -26,12 +20,24 @@ class Role
             'admin-members-update',
             'admin-members-index',
             'admin-members-destroy',
+
             'admin-point-add',
             'admin-point-edit',
             'admin-point-store',
             'admin-point-update',
             'admin-point-index',
             'admin-point-destroy',
+
+            'admin-rewards-index',
+            'admin-rewards-create',
+            'admin-rewards-store',
+            'admin-rewards-edit',
+            'admin-rewards-update',
+            'admin-rewards-delete',
+
+            'admin-redeem-index',
+            'admin-redeem-update',
+
             'register-form',
             'register-user',
             'index-user',
@@ -42,7 +48,7 @@ class Role
             'search-member',
             'admin-change-password',
             'admin-update-password',
-            'admin-dashboard',
+
             'admin-manager-add',
             'admin-manager-edit',
             'admin-manager-store',
@@ -50,6 +56,11 @@ class Role
             'admin-manager-index',
             'admin-manager-destroy',
 
+            // ⭐ ADD GALLERY ROUTES HERE
+              'admin.gallery.index',
+    'admin.gallery.create',
+    'admin.gallery.store',
+    'admin.gallery.destroy',
         ];
 
         $staffRoutes = [
@@ -68,12 +79,23 @@ class Role
             'staff-point-destroy',
         ];
 
+        $memberRoutes = [
+            'member-dashboard',
+            'member-points',
+            'member-rewards',
+            'logout',
+        ];
+
         if ($user->role === 'admin' && !in_array($request->route()->getName(), $adminRoutes)) {
             return redirect()->route('admin-dashboard');
         }
 
         if ($user->role === 'staff' && !in_array($request->route()->getName(), $staffRoutes)) {
             return redirect()->route('staff-dashboard');
+        }
+
+        if ($user->role === 'member' && !in_array($request->route()->getName(), $memberRoutes)) {
+            return redirect()->route('member-dashboard');
         }
 
         return $next($request);

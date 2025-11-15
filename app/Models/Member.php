@@ -16,6 +16,7 @@ class Member extends Model
         'address',
         'dob',
         'phone',
+         'system_pk',
         'user_id' 
     ];
     

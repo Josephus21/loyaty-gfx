@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Http\Controllers\Admin;
-
+use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\Member;
 use App\Models\Point;
@@ -23,7 +23,6 @@ class PointController extends Controller
         // Return the view with the points data
         return view('dashboard.pages.admin.point.index', compact('points'));
     }
-
     public function adminPointCreate(Request $request,)
     {
         if ($request->ajax()) {
@@ -69,29 +68,37 @@ class PointController extends Controller
 
 
     public function adminPointStore(Request $request)
-    {
-        $request->validate([
-            'bill_no' => 'required|string',
-            'bill_amount' => 'required|numeric',
-            'points' => 'required|numeric',
-            'member_id' => 'required|exists:members,id',
-            'user_id' => 'required|exists:users,id',
+{
+    $request->validate([
+        'bill_no' => 'required|string',
+        'bill_amount' => 'required|numeric',
+        'points' => 'required|numeric',
+        'member_id' => 'required|exists:members,id',
+    ]);
+
+    try {
+        Point::create([
+            'member_id' => $request->member_id,
+            'bill_no' => $request->bill_no,
+            'bill_amount' => $request->bill_amount,
+            'points' => $request->points,
+            'user_id' => Auth::id(), // ⭐ ADMIN WHO ADDED THE POINTS
         ]);
 
-        try {
-            Point::create([
-                'bill_no' => $request->bill_no,
-                'bill_amount' => $request->bill_amount,
-                'points' => $request->points,
-                'member_id' => $request->member_id,
-                'user_id' => $request->user_id,
-            ]);
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Point saved successfully!'
+        ]);
 
-            return response()->json(['status' => 'success', 'message' => 'Point saved successfully!']);
-        } catch (\Exception $e) {
-            return response()->json(['status' => 'error', 'message' => 'Error saving point: ' . $e->getMessage()]);
-        }
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Error saving point: ' . $e->getMessage()
+        ], 500);
     }
+}
+
+
 
 
     public function adminPointEdit($id)

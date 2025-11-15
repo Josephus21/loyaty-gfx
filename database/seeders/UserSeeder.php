@@ -16,19 +16,19 @@ class UserSeeder extends Seeder
     {
         User::create([
             'name' => 'Admin User',
-            'email' => 'admin@example.com',
-            'password' => Hash::make('password'), 
+            'email' => 'Josephus@graphicstar.com.ph',
+            'password' => Hash::make('Phussy21'), 
             'role' => 'admin', 
-            'branch' => 'Kathmandu', 
+            'branch' => 'Cebu Graphicstar Imaging Corp - Head Office', 
         ]);
 
         // Create a staff user
         User::create([
             'name' => 'Staff User',
-            'email' => 'staff@example.com',
-            'password' => Hash::make('password'),
+            'email' => 'staff1@example.com',
+            'password' => Hash::make('password1'),
             'role' => 'staff',
-            'branch' => 'kalanki', 
+            'branch' => 'Cebu Graphicstar Imaging Corp - Head Office', 
         ]);
     }
 

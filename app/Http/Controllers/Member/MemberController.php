@@ -4,18 +4,29 @@ namespace App\Http\Controllers\Member;
 
 use App\Http\Controllers\Controller;
 use App\Models\Member;
-use Illuminate\Http\Request;
+use App\Models\Reward;
+use App\Models\Gallery;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Http\Request;
+use App\Models\Point;
+use App\Models\Redeem;
+use Endroid\QrCode\Builder\Builder;
+use Endroid\QrCode\Writer\PngWriter;
+
+
 
 class MemberController extends Controller
 {
+    // ================= STAFF SIDE =================
+
     public function memberIndex()
     {
-        $userId = Auth::id();
-
         $members = Member::with('user')
-        ->where('user_id', $userId) 
-        ->get();
+            ->where('user_id', Auth::id())
+            ->get();
+
         return view('dashboard.pages.staff.member.index', compact('members'));
     }
 
@@ -23,7 +34,6 @@ class MemberController extends Controller
     {
         return view('dashboard.pages.staff.member.add');
     }
-
 
     public function memberStore(Request $request)
     {
@@ -40,25 +50,25 @@ class MemberController extends Controller
         ]);
 
         try {
-            // Creating a new member
-            $storeMember = new Member();
-            $storeMember->form_no = $request->form_no;
-            $storeMember->card_no = $request->card_no;
-            $storeMember->date = $request->date;
-            $storeMember->name = $request->name;
-            $storeMember->gender = $request->gender;
-            $storeMember->email = $request->email;
-            $storeMember->address = $request->address;
-            $storeMember->dob = $request->dob;
-            $storeMember->phone = $request->phone;
-            $storeMember->user_id = Auth::id();
-            $storeMember->save();
+            Member::create([
+                'form_no' => $request->form_no,
+                'card_no' => $request->card_no,
+                'date' => $request->date,
+                'name' => $request->name,
+                'gender' => $request->gender,
+                'email' => $request->email,
+                'address' => $request->address,
+                'dob' => $request->dob,
+                'phone' => $request->phone,
+                'user_id' => Auth::id(),
+            ]);
 
             return redirect()->route('members-index')->with('success', 'Member created successfully.');
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Failed to create member. Please try again.' . $e->getMessage());
+            return redirect()->back()->with('error', 'Failed to create member: ' . $e->getMessage());
         }
     }
+
     public function memberEdit($id)
     {
         $member = Member::findOrFail($id);
@@ -80,27 +90,17 @@ class MemberController extends Controller
         ]);
 
         try {
-            $updateMember = Member::findOrFail($id);
-            $updateMember->form_no = $request->form_no;
-            $updateMember->card_no = $request->card_no;
-            $updateMember->date = $request->date;
-            $updateMember->name = $request->name;
-            $updateMember->gender = $request->gender;
-            $updateMember->email = $request->email;
-            $updateMember->address = $request->address;
-            $updateMember->dob = $request->dob;
-            $updateMember->phone = $request->phone;
-            $updateMember->user_id = Auth::id();
-            $updateMember->save();
+            $member = Member::findOrFail($id);
+            $member->update($request->all());
 
-            return redirect()->route('members-index', $id)->with('success', 'Member updated successfully.');
+            return redirect()->route('members-index')->with('success', 'Member updated successfully.');
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Failed to Update member. Please try again.' . $e->getMessage());
+            return redirect()->back()->with('error', 'Failed to update member: ' . $e->getMessage());
         }
     }
 
 
-
+    // ================= ADMIN SIDE =================
 
     public function adminMemberIndex()
     {
@@ -113,133 +113,221 @@ class MemberController extends Controller
         return view('dashboard.pages.admin.member.add');
     }
 
+  public function adminMemberStore(Request $request)
+{
+    $request->validate([
+        'form_no'   => 'required',
+        'card_no'   => 'required|unique:members,card_no',
+        'date'      => 'required|date',
+        'name'      => 'required|string',
+        'gender'    => 'required',
+        'email'     => 'required|email|unique:members,email|unique:users,email',
+        'address'   => 'required|string',
+        'dob'       => 'required|date',
+        'phone'     => 'required|unique:members,phone',
+        'system_pk' => 'required|string',
+        'password'  => 'required|min:6|confirmed'
+    ]);
 
-    public function adminMemberStore(Request $request)
-    {
-        $request->validate([
-            'form_no' => 'required',
-            'card_no' => 'required|unique:members,card_no',
-            'date' => 'required|date',
-            'name' => 'required|string',
-            'gender' => 'required',
-            'email' => 'required|email|unique:members,email',
-            'address' => 'required|string',
-            'dob' => 'required|date',
-            'phone' => 'required|unique:members,phone'
-        ], [
-            'form_no.required' => 'The form number is required.',
-            'card_no.required' => 'The card number is required.',
-            'card_no.unique' => 'The card number has already been taken.',
-            'date.required' => 'The date is required.',
-            'date.date' => 'The date must be a valid date.',
-            'name.required' => 'The name is required.',
-            'name.string' => 'The name must be a valid string.',
-            'gender.required' => 'The gender is required.',
-            'email.required' => 'The email is required.',
-            'email.email' => 'The email must be a valid email address.',
-            'email.unique' => 'The email has already been taken.',
-            'address.required' => 'The address is required.',
-            'address.string' => 'The address must be a valid string.',
-            'dob.required' => 'The date of birth is required.',
-            'dob.date' => 'The date of birth must be a valid date.',
-            'phone.required' => 'The phone number is required.',
-            'phone.unique' => 'The phone number has already been taken.'
+    try {
+        // Create USER
+        $user = User::create([
+            'name'     => $request->name,
+            'email'    => $request->email,
+            'password' => \Hash::make($request->password),
+            'branch'   => 'N/A',
+            'role'     => 'member',
         ]);
-    
-        // Check if card_no, phone, or email are the same
-        if ($request->card_no === $request->phone || $request->card_no === $request->email || $request->phone === $request->email) {
-            return redirect()->back()->with('error', 'Card number, phone number, and email should not be the same.');
+
+        // Create MEMBER
+        $member = Member::create([
+            'form_no'   => $request->form_no,
+            'card_no'   => $request->card_no,
+            'date'      => $request->date,
+            'name'      => $request->name,
+            'gender'    => $request->gender,
+            'email'     => $request->email,
+            'address'   => $request->address,
+            'dob'       => $request->dob,
+            'phone'     => $request->phone,
+            'system_pk' => $request->system_pk,
+            'user_id'   => $user->id,
+        ]);
+
+        // ⭐ Generate QR code for this member
+        $qrURL    = url('/member/q/' . $member->id);
+        $fileName = 'member_qr_' . $member->id . '.png';
+        $qrPath   = public_path('uploads/qrcodes');
+
+        if (!file_exists($qrPath)) {
+            mkdir($qrPath, 0777, true);
         }
-    
-        try {
-            // Creating a new member
-            $storeMember = new Member();
-            $storeMember->form_no = $request->form_no;
-            $storeMember->card_no = $request->card_no;
-            $storeMember->date = $request->date;
-            $storeMember->name = $request->name;
-            $storeMember->gender = $request->gender;
-            $storeMember->email = $request->email;
-            $storeMember->address = $request->address;
-            $storeMember->dob = $request->dob;
-            $storeMember->phone = $request->phone;
-            $storeMember->user_id = Auth::id();
-            $storeMember->save();
-    
-            return redirect()->route('admin-members-index')->with('success', 'Member created successfully.');
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Failed to create member. Please try again.' . $e->getMessage());
-        }
+
+        $qr = (new Builder(
+            writer: new PngWriter(),
+            data: $qrURL,
+            size: 300,
+            margin: 10
+        ))->build();
+
+        $qr->saveToFile($qrPath . '/' . $fileName);
+
+        $member->qr_code = $fileName;
+        $member->save();
+
+        return redirect()->route('admin-members-index')
+            ->with('success', 'Member created successfully with QR Code.');
+
+    } catch (\Exception $e) {
+        return redirect()->back()
+            ->with('error', 'Failed to create member: ' . $e->getMessage());
     }
-    public function adminMemberEdit($id)
+}
+
+
+    // ⭐ QR CODE SCAN INFO
+    public function qrInfo($id)
     {
         $member = Member::findOrFail($id);
-        return view('dashboard.pages.admin.member.edit', compact('member'));
+
+        return response()->json([
+            'member' => $member->name,
+            'available_points' => $member->points()->sum('points')
+        ]);
     }
 
-    public function adminMemberUpdate(Request $request, $id)
-    {
-        $request->validate([
-            'form_no' => 'required',
-            'card_no' => 'required|unique:members,card_no,' . $id,
-            'date' => 'required|date',
-            'name' => 'required|string',
-            'gender' => 'required',
-            'email' => 'required|email|unique:members,email,' . $id,
-            'address' => 'required|string',
-            'dob' => 'required|date',
-            'phone' => 'required|unique:members,phone,' . $id
-        ], [
-            'form_no.required' => 'The form number is required.',
-            'card_no.required' => 'The card number is required.',
-            'card_no.unique' => 'The card number has already been taken.',
-            'date.required' => 'The date is required.',
-            'date.date' => 'The date must be a valid date.',
-            'name.required' => 'The name is required.',
-            'name.string' => 'The name must be a valid string.',
-            'gender.required' => 'The gender is required.',
-            'email.required' => 'The email is required.',
-            'email.email' => 'The email must be a valid email address.',
-            'email.unique' => 'The email has already been taken.',
-            'address.required' => 'The address is required.',
-            'address.string' => 'The address must be a valid string.',
-            'dob.required' => 'The date of birth is required.',
-            'dob.date' => 'The date of birth must be a valid date.',
-            'phone.required' => 'The phone number is required.',
-            'phone.unique' => 'The phone number has already been taken.'
-        ]);
-    
-        // Check if card_no, phone, or email are the same
-        if ($request->card_no === $request->phone || $request->card_no === $request->email || $request->phone === $request->email) {
-            return redirect()->back()->with('error', 'Card number, phone number, and email should not be the same.');
-        }
-    
-        try {
-            // Find and update the member
-            $updateMember = Member::findOrFail($id);
-            $updateMember->form_no = $request->form_no;
-            $updateMember->card_no = $request->card_no;
-            $updateMember->date = $request->date;
-            $updateMember->name = $request->name;
-            $updateMember->gender = $request->gender;
-            $updateMember->email = $request->email;
-            $updateMember->address = $request->address;
-            $updateMember->dob = $request->dob;
-            $updateMember->phone = $request->phone;
-            $updateMember->user_id = Auth::id();
-            $updateMember->save();
-    
-            return redirect()->route('admin-members-index')->with('success', 'Member updated successfully.');
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Failed to update member. Please try again.' . $e->getMessage());
-        }
+
+    // ================= MEMBER DASHBOARD =================
+
+   public function memberDashboard()
+{
+    $user = Auth::user();
+    $member = Member::where('user_id', $user->id)->first();
+
+    $totalPoints = $member ? $member->points()->sum('points') : 0;
+
+    $pointHistory = $member
+        ? $member->points()->orderBy('created_at', 'desc')->paginate(5)
+        : collect();
+
+    $rewards = Reward::all();
+
+    // ⭐ Fetch gallery images
+    $galleryImages = Gallery::all();
+
+    return view('dashboard.pages.member.dashboard', compact(
+        'user', 'member', 'totalPoints', 'rewards',
+        'pointHistory', 'galleryImages'   // include here
+    ));
+}
+
+    public function memberRewards()
+{
+    $user = Auth::user();
+    $member = Member::where('user_id', $user->id)->first();
+
+    $totalPoints = $member ? $member->points()->sum('points') : 0;
+    $rewards = Reward::all();
+
+    // 🔥 All rewards the member has redeemed (pending OR redeemed)
+    $redeemedStatuses = Redeem::where('member_id', $member->id)
+                              ->pluck('status', 'reward_id')
+                              ->toArray();
+
+    return view('dashboard.pages.member.rewards', compact(
+        'rewards',
+        'totalPoints',
+        'redeemedStatuses'
+    ));
+}
+
+
+
+ public function redeemReward($id)
+{
+    $user = Auth::user();
+    $member = Member::where('user_id', $user->id)->first();
+    $reward = Reward::findOrFail($id);
+
+    $totalPoints = $member->points()->sum('points');
+
+    if ($totalPoints < $reward->points_required) {
+        return back()->with('error', 'Not enough points.');
     }
+
+    // Deduct points
+    Point::create([
+        'bill_no'     => 'REDEEM-' . $reward->id,
+        'bill_amount' => 0,
+        'points'      => -$reward->points_required,
+        'member_id'   => $member->id,
+        'user_id'     => $user->id
+    ]);
+
+    // Generate redeem code
+    $code = uniqid('REWARD-');
+
+    // Save redeem action
+    $redeem = Redeem::create([
+        'member_id' => $member->id,
+        'reward_id' => $reward->id,
+        'code'      => $code,
+        'status'    => 'pending'
+    ]);
+
+
+    // ⭐ Generate QR code using Endroid
+  $qr = (new Builder(
+    writer: new PngWriter(),
+    data: $code,
+    size: 200,
+    margin: 10
+))->build();
+
+$qrBase64 = $qr->getDataUri();
+
+    return view('dashboard.pages.member.redeem', [
+        'reward' => $reward,
+        'qrcode' => $qrBase64,
+        'code'   => $code,
+        'redeem' => $redeem
+    ]);
+}
+
+public function adminMemberEdit($id)
+{
+    $member = Member::findOrFail($id);
+    return view('dashboard.pages.admin.member.edit', compact('member'));
+}
+
+public function adminMemberUpdate(Request $request, $id)
+{
+    $request->validate([
+        'form_no' => 'required',
+        'card_no' => 'required|unique:members,card_no,' . $id,
+        'date' => 'required|date',
+        'name' => 'required|string',
+        'gender' => 'required',
+        'email' => 'required|email|unique:members,email,' . $id,
+        'address' => 'required|string',
+        'dob' => 'required|date',
+        'phone' => 'required|unique:members,phone,' . $id,
+        'system_pk' => 'required|string'
+    ]);
+
+    $member = Member::findOrFail($id);
+    $member->update($request->all());
+
+    return redirect()->route('admin-members-index')
+        ->with('success', 'Member updated successfully.');
+}
+
+
 
     public function adminMemberDestroy($id)
     {
-        $member = Member::findOrFail($id);
-        $member->delete();
-
-        return redirect()->route('admin-members-index')->with('success', 'Member deleted successfully.');
+        Member::findOrFail($id)->delete();
+        return redirect()->route('admin-members-index')
+            ->with('success', 'Member deleted successfully.');
     }
 }

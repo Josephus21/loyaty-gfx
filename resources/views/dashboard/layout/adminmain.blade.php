@@ -2,6 +2,7 @@
 <html lang="en" data-bs-theme="light" data-menu-color="light" data-topbar-color="dark">
 
 <head>
+     <title>Point System </title>
     <meta content="A fully featured admin theme which can be used to build CRM, CMS, etc." name="description" />
     <meta content="Myra Studio" name="author" />
 
@@ -9,7 +10,7 @@
     <link rel="shortcut icon" href="{{ asset('assets/images/favicon.ico') }}">
 
     <!-- TailwindCSS -->
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.2.7/dist/tailwind.min.css" rel="stylesheet">
+   
 
     <!-- Morris CSS -->
     <link href="{{ asset('assets/libs/morris.js/morris.css') }}" rel="stylesheet" type="text/css" />
@@ -34,6 +35,7 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 
+<script src="https://cdn.tailwindcss.com"></script>
 
 
 </head>
@@ -74,21 +76,6 @@
 
                         </a>
                     </li>
-                    <li class="menu-item">
-                        <a href="/admin-manager-index" class="menu-link waves-effect">
-                            <span class="menu-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                    stroke-linecap="round" stroke-linejoin="round" data-lucide="calendar"
-                                    class="lucide lucide-calendar">
-                                    <path d="M8 2v4"></path>
-                                    <path d="M16 2v4"></path>
-                                    <rect width="18" height="18" x="3" y="4" rx="2"></rect>
-                                    <path d="M3 10h18"></path>
-                                </svg></span>
-                            <span class="menu-text">Manager </span>
-
-                        </a>
-                    </li>
 
                     <li class="menu-item">
                         <a href="{{ route('admin-members-index') }}" class="menu-link waves-effect">
@@ -122,6 +109,30 @@
                         </a>
                     </li>
                     <li class="menu-item">
+    <a href="{{ route('admin-rewards-index') }}" class="menu-link waves-effect">
+        <span class="menu-icon">
+            <i data-lucide="gift"></i>
+        </span>
+        <span class="menu-text">Rewards</span>
+    </a>
+</li>
+
+<li class="menu-item">
+    <a href="{{ route('admin-redeem-index') }}" class="menu-link waves-effect">
+        <span class="menu-icon"><i data-lucide="gift"></i></span>
+        <span class="menu-text">Redeem Rewards</span>
+    </a>
+</li>
+<li class="menu-item">
+    <a href="{{ route('admin.gallery.index') }}" class="menu-link waves-effect">
+        <span class="menu-icon"><i data-lucide="image"></i></span>
+        <span class="menu-text">Gallery</span>
+    </a>
+</li>
+
+
+
+                    <li class="menu-item">
                         <a href="/user-index" class="menu-link waves-effect">
                             <span class="menu-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
                                     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -152,23 +163,7 @@
                         </a>
                     </li>
 
-                    <li class="menu-item">
-                        <a href="#menuTables" data-bs-toggle="collapse" class="menu-link waves-effect">
-                            <span class="menu-icon"><i data-lucide="list"></i></span>
-                            <span class="menu-text"> Reports </span>
-                            <span class="menu-arrow"></span>
-                        </a>
-                        <div class="collapse" id="menuTables">
-                            <ul class="sub-menu">
-
-                                <li class="menu-item">
-                                    <a href="view-report.html" class="menu-link">
-                                        <span class="menu-text">View Reports</span>
-                                    </a>
-                                </li>
-                            </ul>
-                        </div>
-                    </li>
+                
                     <li class="menu-item">
                         <a href="/logout" class="menu-link waves-effect">
                             <span class="menu-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
@@ -320,13 +315,13 @@
                                 <div>
                                     <script>
                                         document.write(new Date().getFullYear())
-                                    </script> © president
+                                    </script>GFX
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="d-none d-md-flex gap-4 align-item-center justify-content-md-end">
-                                    <p class="mb-0">Design & Develop by <a href="https://namunacomputer.com/"
-                                            target="_blank">Namuna Computer</a> </p>
+                                    <p class="mb-0">Develop by <a href="https://namunacomputer.com/"
+                                            target="_blank">Cebu Graphicstar Imaging Corp.</a> </p>
                                 </div>
                             </div>
                         </div>

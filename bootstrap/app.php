@@ -11,7 +11,12 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        //
+
+        // ⭐ REGISTER YOUR CUSTOM MIDDLEWARE HERE ⭐
+        $middleware->alias([
+            'role' => \App\Http\Middleware\Role::class,
+        ]);
+
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

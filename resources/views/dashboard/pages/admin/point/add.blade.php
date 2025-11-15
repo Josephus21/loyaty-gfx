@@ -171,13 +171,17 @@
     });
 
     // Calculate points based on bill amount
-    document.addEventListener('input', function(e) {
-        if (e.target.id === 'billamount') {
-            const billAmount = parseFloat(e.target.value) || 0;
-            const points = (billAmount / 1000).toFixed(5);
-            document.getElementById('point').value = points;
-        }
-    });
+document.addEventListener('input', function(e) {
+    if (e.target.id === 'billamount') {
+        const billAmount = parseFloat(e.target.value) || 0;
+
+        // ⭐ New rule: 10,000 pesos = 1 point
+        const points = (billAmount / 10000).toFixed(5);
+
+        document.getElementById('point').value = points;
+    }
+});
+
 
     // Prevent form submission on Enter key
     document.addEventListener('keydown', function(e) {

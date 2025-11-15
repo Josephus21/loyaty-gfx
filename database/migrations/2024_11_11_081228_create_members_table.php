@@ -23,6 +23,8 @@ return new class extends Migration
             $table->date('dob');
             $table->string('phone');
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->string('system_pk')->nullable();
+
             $table->timestamps();
         });
     }
@@ -35,3 +37,4 @@ return new class extends Migration
         Schema::dropIfExists('members');
     }
 };
+ 

@@ -8,7 +8,6 @@ use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use SebastianBergmann\CodeCoverage\Report\Html\Dashboard;
 use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
@@ -28,10 +27,8 @@ class AuthController extends Controller
         return view('dashboard.pages.index');
     }
 
-
     public function registerUser(Request $request)
     {
-
         try {
             $request->validate([
                 'name' => 'required|string|max:255',
@@ -40,13 +37,13 @@ class AuthController extends Controller
                 'branch' => 'required|string',
             ]);
 
-            $registerUser = new User();
-            $registerUser->name = $request->name;
-            $registerUser->email = $request->email;
-            $registerUser->password = Hash::make($request->password);
-            $registerUser->branch = $request->branch;
-            $registerUser->role = 'staff';
-            $registerUser->save();
+            User::create([
+                'name'    => $request->name,
+                'email'   => $request->email,
+                'password'=> Hash::make($request->password),
+                'branch'  => $request->branch,
+                'role'    => 'staff',
+            ]);
 
             return redirect()->route('index-user')->with('success', 'Registration successful. Please login.');
         } catch (\Exception $e) {
@@ -54,42 +51,95 @@ class AuthController extends Controller
         }
     }
 
+    // ----------------- MEMBER REGISTER FORM -----------------
+    public function memberRegisterForm()
+    {
+        return view('dashboard.auth.member_register');
+    }
+
+    // ----------------- MEMBER REGISTER (USER + MEMBER) -----------------
+    public function registerMember(Request $request)
+    {
+        $request->validate([
+            'name'     => 'required|string|max:255',
+            'email'    => 'required|email|unique:users,email',
+            'password' => 'required|min:6|confirmed',
+            'branch'   => 'required|string',
+
+            'form_no'  => 'required',
+            'card_no'  => 'required|unique:members,card_no',
+            'gender'   => 'required',
+            'address'  => 'required',
+            'dob'      => 'required|date',
+            'phone'    => 'required|unique:members,phone'
+        ]);
+
+        // Create Login User
+        $user = User::create([
+            'name'     => $request->name,
+            'email'    => $request->email,
+            'password' => Hash::make($request->password),
+            'branch'   => $request->branch,
+            'role'     => 'member'
+        ]);
+
+        // Create Member Profile
+        Member::create([
+            'form_no' => $request->form_no,
+            'card_no' => $request->card_no,
+            'date'    => now(),
+            'name'    => $request->name,
+            'gender'  => $request->gender,
+            'email'   => $request->email,
+            'address' => $request->address,
+            'dob'     => $request->dob,
+            'phone'   => $request->phone,
+            'system_pk' => $request->system_pk,
+            'user_id' => $user->id,
+        ]);
+
+        return redirect()->route('login')->with('success', 'Member registered successfully. Please login.');
+    }
+
+    // ----------------- LOGIN -----------------
     public function login(Request $request)
     {
-        // Validate the input
         $validator = Validator::make($request->all(), [
-            'email' => 'required|email',
+            'email'    => 'required|email',
             'password' => 'required|min:6',
         ]);
-    
-        // Handle validation failures
+
         if ($validator->fails()) {
             return redirect()->route('login')
-                ->withErrors($validator) 
-                ->withInput(); 
+                ->withErrors($validator)
+                ->withInput();
         }
-    
+
         try {
             $credentials = $request->only('email', 'password');
-    
+
             if (Auth::attempt($credentials)) {
-                $user = Auth::user(); 
-    
+                $user = Auth::user();
+
                 if ($user->role === 'admin') {
                     return redirect()->route('admin-dashboard')->with('success', 'Successfully logged in as Admin.');
-                } elseif ($user->role === 'staff' && $user->branch) {
+                } elseif ($user->role === 'staff') {
                     return redirect()->route('staff-dashboard')->with('success', 'Successfully logged in as Staff.');
+                } elseif ($user->role === 'member') {
+                    return redirect()->route('member-dashboard')->with('success', 'Welcome back, member!');
                 } else {
                     Auth::logout();
                     return redirect()->route('login')->with('error', 'Unauthorized role.');
                 }
             }
+
             return redirect()->route('login')->with('error', 'Invalid credentials.');
-        } catch (\Exception) {
-        
-            return redirect()->route('login')->with('error', 'An error occurred during login. Please try again.');
+        } catch (\Exception $e) {
+            return redirect()->route('login')->with('error', 'Login issue. Please try again.');
         }
     }
+
+    // ----------------- DASHBOARDS -----------------
     public function generateGradientColor($index, $total)
     {
         // Generate a color based on the index and total

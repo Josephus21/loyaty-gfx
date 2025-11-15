@@ -1,16 +1,43 @@
 <?php
-
+use App\Http\Controllers\Admin\RewardController;
 use App\Http\Controllers\Admin\ManagerController;
 use App\Http\Controllers\Admin\PointController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Member\MemberController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\Role;
+use App\Http\Controllers\Admin\GalleryController;
 use Illuminate\Database\Capsule\Manager;
+use App\Http\Controllers\Admin\RedeemController;
 
 // Login Routes
 Route::get('/', [AuthController::class, 'loginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login-submit');
+
+// Login Routes
+Route::get('/', [AuthController::class, 'loginForm'])->name('login');
+Route::post('/login', [AuthController::class, 'login'])->name('login-submit');
+
+// PUBLIC MEMBER REGISTRATION ROUTES
+Route::get('/member/register', [AuthController::class, 'memberRegisterForm'])->name('member.register.form');
+Route::post('/member/register', [AuthController::class, 'registerMember'])->name('member.register');
+
+// MEMBER DASHBOARD (Controller handles data)
+Route::get('/member/dashboard', [MemberController::class, 'memberDashboard'])
+    ->name('member-dashboard')
+    ->middleware(['auth', 'role']);
+
+// MEMBER POINTS
+Route::get('/member/points', [MemberController::class, 'memberPoints'])
+    ->name('member-points')
+    ->middleware(['auth', 'role']);
+
+// MEMBER REWARDS
+Route::get('/member/rewards', [MemberController::class, 'memberRewards'])
+    ->name('member-rewards')
+    ->middleware(['auth','role']);
+Route::get('/member/redeem/{id}', [MemberController::class, 'redeemReward'])->name('member.redeem');
+Route::get('/member/q/{id}', [MemberController::class, 'qrInfo']);
 
 
 
@@ -46,6 +73,28 @@ Route::middleware(['auth', Role::class])->group(function () {
     Route::post('/admin-update-manager/{id}', [ManagerController::class, 'adminManagerUpdate'])->name('admin-manager-update');
     Route::get('/admin-delete-manager/{id}', [ManagerController::class, 'adminManagerDestroy'])->name('admin-manager-destroy');
 
+    Route::get('/admin/rewards', [RewardController::class, 'index'])->name('admin-rewards-index');
+Route::get('/admin/rewards/create', [RewardController::class, 'create'])->name('admin-rewards-create');
+Route::post('/admin/rewards/store', [RewardController::class, 'store'])->name('admin-rewards-store');
+Route::get('/admin/rewards/{id}/edit', [RewardController::class, 'edit'])
+    ->name('admin-rewards-edit');
+
+Route::put('/admin/rewards/{id}', [RewardController::class, 'update'])
+    ->name('admin-rewards-update');
+
+// NEW DELETE ROUTE
+Route::delete('/admin/rewards/{id}', [RewardController::class, 'destroy'])
+    ->name('admin-rewards-delete');
+
+
+Route::get('/admin/redeem', [RedeemController::class, 'index'])->name('admin-redeem-index');
+Route::post('/admin/redeem/{id}', [RedeemController::class, 'markRedeemed'])->name('admin-redeem-update');
+Route::post('/admin/redeem/{id}/mark', 
+    [App\Http\Controllers\Admin\RedeemController::class, 'markRedeemed']
+)->name('admin-redeem-update');
+
+
+
     // Admin Member Routes
     Route::get('/admin-index-members', [MemberController::class, 'adminMemberIndex'])->name('admin-members-index');
     Route::get('/admin-add-members', [MemberController::class, 'adminMemberCreate'])->name('admin-members-add');
@@ -62,6 +111,26 @@ Route::middleware(['auth', Role::class])->group(function () {
     Route::get('/edit-admin-point/{id}', [PointController::class, 'adminPointEdit'])->name('admin-point-edit');
     Route::post('/update-admin-point/{id}', [PointController::class, 'adminPointUpdate'])->name('admin-point-update');
     Route::get('/admin-delete-members/{id}', [PointController::class, 'adminPointDelete'])->name('admin-members-destroy');
+Route::post('/admin/settings/point-system', function (\Illuminate\Http\Request $request) {
+    \App\Models\Setting::set('point_amount_per_point', $request->amount_per_point);
+    return response()->json(['status' => 'ok']);
+});
+
+// Gallery Module
+// -----------------
+// GALLERY MODULE
+// -----------------
+Route::middleware(['auth', 'role:admin'])->group(function () {
+
+    Route::get('/admin/gallery', [GalleryController::class, 'index'])->name('admin.gallery.index');
+
+    Route::get('/admin/gallery/create', [GalleryController::class, 'create'])->name('admin.gallery.create');
+
+    Route::post('/admin/gallery/store', [GalleryController::class, 'store'])->name('admin.gallery.store');
+
+    Route::delete('/admin/gallery/{id}', [GalleryController::class, 'destroy'])->name('admin.gallery.destroy');
+
+});
 
 
     // Staff Routes
