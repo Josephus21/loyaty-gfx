@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: loyalty-gfx
+    env: docker
+    region: oregon
+    plan: free
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: APP_KEY
+        value: base64:VUZc6h0rNVSERCZtv9ZKjy1I5HGQqTDG9uHESRHuVXE=
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: false
+      - key: FILESYSTEM_DISK
+        value: public
